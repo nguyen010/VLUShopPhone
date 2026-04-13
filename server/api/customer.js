@@ -79,97 +79,26 @@ router.post('/signup', async function (req, res) {
     if (dbCust) {
       return res.json({
         success: false,
-        message: 'Username or email already exists'
+        message: 'Tên đăng nhập hoặc email đã tồn tại!'
       });
     }
 
-    const now = new Date().getTime();
-    const token = CryptoUtil.md5(now.toString());
-
+    // Tạo tài khoản và kích hoạt ngay lập tức (active: 1)
     const newCust = {
       username,
       password,
       name,
       phone,
       email,
-      active: 0,
-      token
+      active: 1,
+      token: ''
     };
 
     const result = await CustomerDAO.insert(newCust);
 
-    // Gửi email kích hoạt tài khoản đẹp
-    try {
-      const nodemailer = require('nodemailer');
-      const MyConstants = require('../utils/MyConstants');
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: MyConstants.EMAIL_USER, pass: MyConstants.EMAIL_PASS }
-      });
-
-      const htmlMail = `<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 0;">
-<tr><td align="center">
-<table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);max-width:520px;width:100%;">
-  <tr><td style="background:linear-gradient(135deg,#c8000f 0%,#900008 100%);padding:32px;text-align:center;">
-    <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:12px;padding:10px 28px;margin-bottom:8px;">
-      <span style="font-size:22px;font-weight:900;color:#fff;letter-spacing:1px;">VLUPhone</span>
-    </div>
-    <p style="color:rgba(255,255,255,0.85);margin:0;font-size:14px;">Xác nhận tài khoản của bạn</p>
-  </td></tr>
-  <tr><td style="padding:32px;">
-    <h2 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#1a1a1a;">Chào mừng, ${name}! 🎉</h2>
-    <p style="margin:0 0 24px;font-size:14px;color:#555;line-height:1.6;">
-      Cảm ơn bạn đã đăng ký tài khoản tại <strong>VLUPhone</strong>. Vui lòng dùng thông tin bên dưới để kích hoạt tài khoản.
-    </p>
-
-    <div style="background:linear-gradient(135deg,#fff5f5,#fff);border:1.5px solid #fde8e8;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
-      <div style="margin-bottom:14px;">
-        <div style="font-size:11px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;">User ID</div>
-        <div style="font-family:monospace;font-size:16px;font-weight:800;color:#d70018;background:#fff;border:1.5px solid #fde8e8;border-radius:8px;padding:10px 14px;letter-spacing:1px;">
-          ${result._id}
-        </div>
-      </div>
-      <div>
-        <div style="font-size:11px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:5px;">Mã kích hoạt (Token)</div>
-        <div style="font-family:monospace;font-size:16px;font-weight:800;color:#d70018;background:#fff;border:1.5px solid #fde8e8;border-radius:8px;padding:10px 14px;letter-spacing:1px;word-break:break-all;">
-          ${token}
-        </div>
-      </div>
-    </div>
-
-    <div style="text-align:center;margin-bottom:20px;">
-      <a href="http://localhost:3000/active" style="display:inline-block;background:linear-gradient(135deg,#d70018,#ff2233);color:#fff;text-decoration:none;padding:13px 32px;border-radius:10px;font-size:14px;font-weight:800;box-shadow:0 4px 16px rgba(215,0,24,0.35);">
-        🔓 Kích hoạt tài khoản ngay
-      </a>
-    </div>
-
-    <div style="background:#f8f9fa;border-radius:10px;padding:14px 16px;font-size:12.5px;color:#777;line-height:1.6;">
-      ⚠️ <strong>Lưu ý:</strong> Không chia sẻ mã này cho bất kỳ ai. Nếu bạn không thực hiện đăng ký này, hãy bỏ qua email.
-    </div>
-  </td></tr>
-  <tr><td style="background:#1a1f2e;padding:16px 32px;text-align:center;">
-    <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.5);">VLUPhone — Điện thoại chính hãng • Hotline: 1800 2097</p>
-  </td></tr>
-</table>
-</td></tr>
-</table>
-</body></html>`;
-
-      await transporter.sendMail({
-        from: `"VLUPhone" <${MyConstants.EMAIL_USER}>`,
-        to: email,
-        subject: '🔐 VLUPhone — Xác nhận tài khoản của bạn',
-        html: htmlMail,
-      });
-    } catch (mailErr) {
-      console.error('Send activation email error:', mailErr.message);
-    }
-
     res.json({
       success: true,
-      message: 'Đăng ký thành công!',
+      message: 'Đăng ký tài khoản thành công! Bạn có thể đăng nhập ngay.',
       customer: result
     });
 
@@ -178,7 +107,6 @@ router.post('/signup', async function (req, res) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
 
 // ================= ACTIVE =================
 router.post('/active', async function (req, res) {
@@ -199,21 +127,19 @@ router.post('/login', async function (req, res) {
     const customer = await CustomerDAO.selectByUsernameAndPassword(username, password);
 
     if (customer) {
-      if (customer.active === 1) {
-        const token = JwtUtil.genToken();
-
-        res.json({
-          success: true,
-          message: 'Authentication successful',
-          token: token,
-          customer: customer
-        });
-      } else {
-        res.json({
+      if (customer.active === 0) {
+        return res.json({
           success: false,
-          message: 'Account is deactive'
+          message: 'Tài khoản đã bị khóa. Vui lòng liên hệ admin!'
         });
       }
+      const token = JwtUtil.genToken();
+      res.json({
+        success: true,
+        message: 'Đăng nhập thành công!',
+        token: token,
+        customer: customer
+      });
     } else {
       res.json({
         success: false,
