@@ -1,33 +1,16 @@
-const nodeMailer = require('nodemailer');
-const MyConstants = require('./MyConstants');
-const transporter = nodeMailer.createTransport({
-    host: 'smtp-relay.brevo.com',
-    port: 587,
-    secure: false,
-    family: 4,
-    auth: {
-        user: 'a7ebe7001@smtp-brevo.com',
-        pass: 'BtIaS2QysTGDf9q0'
-    }
-});
+const { Resend } = require('resend');
+const resend = new Resend('re_ENnrSzr2_KPF8iBFCoTTXgQaEPZ3w53QN');
+
 const EmailUtil = {
-    send(email, id, token) {
+    async send(email, id, token) {
         const text = 'Thank for signing up, please input these information to activate your account:\n\t .id: ' + id + '\n\t .token: ' + token;
-        return new Promise(function (resolve, reject) {
-            const mailOptions = {
-                from: MyConstants.EMAIL_USER,
-                to: email,
-                subject: 'Signup | Verfication',
-                text: text
-            };
-            transporter.sendMail(mailOptions, function (error, info) {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(info);
-                }
-            });
+        return resend.emails.send({
+            from: 'onboarding@resend.dev',
+            to: email,
+            subject: 'Signup | Verification',
+            text: text
         });
     }
 };
+
 module.exports = EmailUtil;
