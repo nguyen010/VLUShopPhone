@@ -1,13 +1,12 @@
 const nodeMailer = require('nodemailer');
 const MyConstants = require('./MyConstants');
 const transporter = nodeMailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    family: 4,
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
     auth: {
-        user: MyConstants.EMAIL_USER,
-        pass: MyConstants.EMAIL_PASS
+        user: 'a7ebe7001@smtp-brevo.com',
+        pass: 'BtIaS2QysTGDf9q0'
     }
 });
 const EmailUtil = {
